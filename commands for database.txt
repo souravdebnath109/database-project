@@ -1,0 +1,256 @@
+//Command  for modify  a  column_name in   event  table?
+
+alter table event
+rename column event_date to start_date;
+
+//Command  for  insert  data  in   venus  table?
+
+insert into venue (venue_id, venue_name, location_id)
+values (1, 'Convention Center', 1);
+
+//Command for update data in   a  table ticket?
+
+update ticket
+set price = 1200
+where ticket_id = 3;
+
+//Command for delele row from table
+  ticket?
+
+delete from ticket
+where ticket_id = 3;
+
+
+
+
+
+=====with clause
+
+//Retrieve all events along with their corresponding venue names using a common table expression (WITH clause)?.
+
+with event_venue as (
+    select e.event_name, v.venue_name
+    from event e
+    inner join venue v on e.venue_id = v.venue_id
+)
+select * from event_venue;
+
+
+//Find the events with more than 100 participants.?
+
+select event_id, count(*) as participant_count
+from event_participant
+group by event_id
+having count(*) > 100;
+
+//Write a PL/SQL block to declare a variable named "total_participants" and assign it the total count of participants in the Event_Participant table. Then print the value of the variable?
+
+SET SERVEROUTPUT ON; -- This ensures that DBMS_OUTPUT messages are displayed
+
+DECLARE
+    total_participants INT;
+BEGIN
+    SELECT COUNT(*) INTO total_participants FROM event_participant;
+    -- Displaying the result using DBMS_OUTPUT.PUT_LINE
+    DBMS_OUTPUT.PUT_LINE('Total Participants: ' || total_participants);
+END;
+/
+
+
+
+//Write an SQL command to insert a new venue named 'Exhibition Hall' with a venue ID of 5 and associated with the location ID 3 into the Venue table. What does this command accomplish?
+
+insert into venue (venue_id, venue_name, location_id)
+values (5, 'Exhibition Hall', 3);
+
+
+//================pl/sql
+
+//Write a PL/SQL block to insert a new row into the Event_Participant table with event_id = 1 and participant_id = 1 using a row type variable. What is the purpose of using a row type variable in this scenario?
+
+
+SET SERVEROUTPUT ON;
+
+declare
+    v_event_participant event_participant%rowtype;
+begin
+    v_event_participant.event_id := 1;
+    v_event_participant.participant_id := 1;
+
+    insert into event_participant values v_event_participant;
+
+    dbms_output.put_line('Row inserted with event ID: ' || v_event_participant.event_id);
+end;
+/
+
+
+
+==================trigger
+//Write a trigger named "Event_Insert_Trigger" that prints a message whenever a new event is inserted into the Event table. What action does this trigger perform?
+
+create or replace trigger event_insert_trigger
+before insert on event
+for each row
+begin
+    -- Outputting information about the new event inserted
+    raise_application_error(-20001, 'New event inserted: ' || :new.event_name);
+end;
+/
+
+
+
+//============join
+//Question: Retrieve the names of participants who have purchased tickets for events organized by "Tech Events BD", along with the corresponding event names and venue names.
+
+
+
+SELECT P.participant_name, E.event_name, V.venue_name
+FROM Participant P
+INNER JOIN Event_Participant EP ON P.participant_id = EP.participant_id
+INNER JOIN Event E ON EP.event_id = E.event_id
+INNER JOIN Organizer O ON E.organizer_id = O.organizer_id
+INNER JOIN Venue V ON E.venue_id = V.venue_id
+WHERE O.organizer_name = 'Tech Events BD';
+
+
+//==========nested query
+
+//
+Retrieve the names of participants who have purchased tickets for events held in venues located in the same city as the "National Stadium", along with the corresponding event names.
+
+
+SELECT participant_name
+FROM Participant
+WHERE participant_id IN (
+    SELECT participant_id
+    FROM Event_Participant
+    WHERE event_id IN (
+        SELECT event_id
+        FROM Event
+        WHERE venue_id IN (
+            SELECT venue_id
+            FROM Venue
+            WHERE location_id IN (
+                SELECT location_id
+                FROM Location
+                WHERE city = (
+                    SELECT city
+                    FROM Venue
+                    WHERE venue_name = 'National Stadium'
+                )
+            )
+        )
+    )
+);
+
+
+
+===============procedure
+
+//Create a PL/SQL procedure named "GetVenueDetails" to count the total number of venues in the Venue table and print the result?
+
+create or replace procedure get_venue_details as
+    v_venue_count int;
+begin
+    select count(*) into v_venue_count from venue;
+    dbms_output.put_line('Total Venues: ' || v_venue_count);
+end get_venue_details;
+/
+
+..................ans:
+-- Enable DBMS output
+SET SERVEROUTPUT ON;
+
+-- Execute the procedure
+EXEC get_venue_details;
+
+
+//=========trigger
+  command:
+
+CREATE OR REPLACE TRIGGER inser_trigger
+AFTER INSERT ON Location
+FOR EACH ROW
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('New location inserted:');
+    DBMS_OUTPUT.PUT_LINE('Location ID: ' || :NEW.location_id);
+    DBMS_OUTPUT.PUT_LINE('City: ' || :NEW.city);
+    DBMS_OUTPUT.PUT_LINE('State: ' || :NEW.state);
+    DBMS_OUTPUT.PUT_LINE('Country: ' || :NEW.country);
+END;
+/
+  
+
+
+
+
+and  answer  is
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    v_location_id Location.location_id%TYPE := 12;
+    v_city Location.city%TYPE := 'New City';
+    v_state Location.state%TYPE := 'New State';
+    v_country Location.country%TYPE := 'New Country';
+BEGIN
+    -- Inserting a new location
+    INSERT INTO Location (location_id, city, state, country)
+    VALUES (v_location_id, v_city, v_state, v_country);
+
+
+
+  
+    DBMS_OUTPUT.PUT_LINE('New location inserted successfully.');
+
+END;
+
+/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DECLARE
+    v_location_id Location.location_id%TYPE := -1;
+    v_city Location.city%TYPE := 'New City';
+    v_state Location.state%TYPE := 'New State';
+    v_country Location.country%TYPE := 'New Country';
+BEGIN
+    -- Inserting a new location with a duplicate location ID
+    INSERT INTO Location (location_id, city, state, country)
+    VALUES (v_location_id, v_city, v_state, v_country);
+    
+
+    COMMIT;
+    
+
+    DBMS_OUTPUT.PUT_LINE('New location inserted successfully.');
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('An error occurred: ' || SQLERRM);
+END;
+/
+
+
+
+
+
